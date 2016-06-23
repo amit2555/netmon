@@ -1,24 +1,36 @@
 #!/usr/bin/env python
 
-
 #------------------------------------------------------------
-# This is a simple UDP Ponger script that echo's message
+# This is a multi-threaded UDP Ponger script that echo's message
 # received on listening port.
 #------------------------------------------------------------
 
-from socket import *
+
+import SocketServer
+
+
+SERVER_HOST = 'localhost'
+SERVER_PORT = 12000
+
+
+class ForkingServerRequestHandler(SocketServer.BaseRequestHandler):
+    def handle(self):
+        """Send echo back to Client."""
+        data, socket = self.request
+        socket.sendto(data, self.client_address)
+        return None
+
+
+class ForkingServer(SocketServer.ForkingMixIn, SocketServer.UDPServer):
+    pass
 
 
 def main():
-    # Open a UDP socket and bind to a port
-    server_socket = socket(AF_INET, SOCK_DGRAM)
-    server_socket.bind(('', 12000))
+    # Start a server
+    server = ForkingServer((SERVER_HOST, SERVER_PORT), 
+                           ForkingServerRequestHandler)
 
-    # Receive message from Clients and echo back
-    while True:
-        message, address = server_socket.recvfrom(1024)
-        print message, address
-        server_socket.sendto(message, address)
+    server.serve_forever()
 
 
 if __name__ == "__main__":
